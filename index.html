@@ -1,0 +1,1651 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="description" content="Tideline - draw your boat a route through moving water. The line is drawn in the sea, so the sea carries it.">
+<meta name="theme-color" content="#bfeae6">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%23bfeae6'/%3E%3Cpath d='M4 21c4-6 8 4 12-2s8 2 12-4' stroke='%230e7f84' stroke-width='2.6' fill='none' stroke-linecap='round'/%3E%3Cpath d='M22 8l5 3-5 3-1-3z' fill='%23e2503a'/%3E%3Ccircle cx='9' cy='11' r='3' fill='%23ffc24d'/%3E%3C/svg%3E">
+<style>*{box-sizing:border-box}html,body{margin:0;padding:0;height:100%;background:#bfeae6}
+img{max-width:100%}[hidden]{display:none!important}</style>
+<title>Tideline</title>
+<style>
+  :root{ color-scheme: light; }
+  *{ box-sizing: border-box; }
+  html,body{ height:100%; }
+  body{
+    margin:0; background:#bfeae6; color:#0d3a40; overflow:hidden;
+    -webkit-tap-highlight-color:transparent;
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  }
+  #app{
+    position:fixed; inset:0; overflow:hidden; background:#bfeae6;
+    touch-action:none; user-select:none; -webkit-user-select:none;
+  }
+  #c{ display:block; position:absolute; inset:0; }
+
+  #sysbar{ position:absolute; top:14px; right:14px; z-index:6; display:flex; gap:9px; }
+  .sysbtn{
+    width:42px; height:42px; border-radius:13px; border:1px solid rgba(13,58,64,.22);
+    background:rgba(240,253,251,.75); color:#0e7f84; cursor:pointer; padding:0;
+    display:flex; align-items:center; justify-content:center;
+    backdrop-filter:blur(6px); -webkit-backdrop-filter:blur(6px);
+    transition:transform .12s ease, background .12s ease;
+  }
+  .sysbtn:hover{ background:#f0fdfb; }
+  .sysbtn:active{ transform:scale(.92); }
+  .sysbtn svg{ width:20px; height:20px; display:block; }
+
+  .overlay{
+    position:absolute; inset:0; z-index:5; padding:24px;
+    display:flex; flex-direction:column; align-items:center; justify-content:center; gap:15px;
+    text-align:center;
+    background:radial-gradient(120% 92% at 50% 40%, rgba(236,252,249,.9) 0%, rgba(150,215,208,.96) 74%);
+    color:#0d3a40;
+  }
+  .logo{
+    font-size:clamp(40px,12vmin,80px); font-weight:900; letter-spacing:-.02em; line-height:.92;
+    margin:0; text-transform:uppercase; color:#0b6f73;
+    text-shadow:0 3px 0 #a6e2dc, 0 9px 24px rgba(10,90,92,.3);
+  }
+  .tagline{
+    margin:0; font-size:clamp(11px,2.8vmin,13px); letter-spacing:.3em; text-transform:uppercase;
+    color:#12878b; font-weight:800;
+  }
+  .btn{
+    appearance:none; -webkit-appearance:none; border:0; cursor:pointer; font-family:inherit;
+    font-size:clamp(15px,3.6vmin,18px); font-weight:900; letter-spacing:.15em; text-transform:uppercase;
+    padding:17px 42px; border-radius:16px; color:#3a1c10; margin-top:4px;
+    background:linear-gradient(180deg,#ffc178 0%,#f5892f 100%);
+    box-shadow:0 5px 0 #bc5a17, 0 12px 26px rgba(120,70,20,.28);
+    transition:transform .1s ease, box-shadow .1s ease;
+  }
+  .btn:hover{ background:linear-gradient(180deg,#ffd096 0%,#ff9a45 100%); }
+  .btn:active{ transform:translateY(4px); box-shadow:0 1px 0 #bc5a17, 0 6px 14px rgba(120,70,20,.3); }
+  .btn.ghost{
+    background:transparent; color:#0e7f84; padding:12px 26px; font-size:13px; letter-spacing:.18em;
+    box-shadow:0 0 0 1px rgba(14,127,132,.34) inset;
+  }
+  .btn.ghost:hover{ background:rgba(255,255,255,.46); }
+  .btn.ghost:active{ transform:translateY(2px); box-shadow:0 0 0 1px rgba(14,127,132,.34) inset; }
+  .hint{
+    margin:6px 0 0; font-size:clamp(11px,2.7vmin,13px); line-height:1.75; color:#2f7a7e;
+    letter-spacing:.04em; max-width:35ch;
+  }
+  .hint b{ color:#0d3a40; font-weight:800; }
+
+  .scorecard{ display:flex; gap:14px; flex-wrap:wrap; justify-content:center; }
+  .stat{
+    min-width:126px; padding:14px 20px; border-radius:18px;
+    background:rgba(240,253,251,.8); border:1px solid rgba(14,127,132,.2);
+  }
+  .stat .k{ font-size:10px; letter-spacing:.26em; text-transform:uppercase; color:#5aa0a2; font-weight:800; }
+  .stat .v{ font-size:clamp(28px,7.4vmin,40px); font-weight:900; color:#0d3a40; line-height:1.15; }
+  .stat.best .v{ color:#ef6f4e; }
+  .headline{
+    margin:0; font-size:clamp(26px,7.6vmin,44px); font-weight:900; letter-spacing:.02em; text-transform:uppercase;
+    color:#0b6f73; text-shadow:0 3px 0 #a6e2dc;
+  }
+  .record{ margin:0; font-size:12px; font-weight:900; letter-spacing:.28em; text-transform:uppercase; color:#ef6f4e; }
+  .runstats{
+    margin:0; font-size:12px; letter-spacing:.12em; color:#2f7a7e; text-transform:uppercase;
+    font-weight:800; line-height:1.9; max-width:32ch; text-wrap:balance;
+  }
+
+  :focus-visible{ outline:3px solid #f5892f; outline-offset:3px; }
+
+  .tiers{ display:flex; gap:8px; justify-content:center; margin:2px 0 0; width:100%; max-width:430px; }
+  .tier{
+    appearance:none; -webkit-appearance:none; cursor:pointer; font-family:inherit;
+    border:1px solid rgba(14,127,132,.24); background:rgba(240,253,251,.66); color:#2f7a7e;
+    padding:11px 9px; border-radius:14px; flex:1 1 0; min-width:0;
+    display:flex; flex-direction:column; gap:4px; align-items:center; justify-content:center;
+    transition:border-color .14s ease, background .14s ease, transform .12s ease, color .14s ease;
+  }
+  .tier:hover{ background:#f0fdfb; }
+  .tier:active{ transform:scale(.97); }
+  .tier .tn{ font-size:12px; font-weight:900; letter-spacing:.1em; text-transform:uppercase; }
+  .tier .tb{ font-size:10px; letter-spacing:.02em; line-height:1.3; color:#5aa0a2; }
+  .tier[aria-checked="true"]{
+    border-color:#13a3a0; background:#cdf2ec; color:#0b6f73;
+    box-shadow:0 0 0 2px rgba(19,163,160,.3);
+  }
+  .tier[aria-checked="true"] .tb{ color:#12878b; }
+
+  .suggest{
+    display:flex; flex-direction:column; gap:9px; align-items:center; margin:0;
+    padding:13px 18px; border-radius:16px;
+    background:rgba(216,241,253,.9); border:1px solid rgba(19,163,160,.42);
+  }
+  .suggest .msg{ margin:0; font-size:12px; letter-spacing:.05em; color:#0b6f73; font-weight:800; max-width:31ch; }
+  .suggest .btn.ghost{ margin:0; color:#0b6f73; box-shadow:0 0 0 1px rgba(19,163,160,.5) inset; }
+
+  .legend{ display:flex; gap:18px; justify-content:center; align-items:center; margin:2px 0 0; flex-wrap:wrap; }
+  .lg{ display:flex; align-items:center; gap:7px; font-size:11px; font-weight:800; letter-spacing:.12em;
+       text-transform:uppercase; color:#2f7a7e; }
+  .lg i{ width:18px; height:18px; display:block; }
+  .lg i.lamp{ border-radius:50%; background:radial-gradient(circle at 38% 34%,#fff3c4 0%,#ffc24d 55%,#e8952a 100%);
+              box-shadow:0 0 0 1px rgba(150,95,20,.4), 0 0 10px rgba(255,196,80,.8); }
+  .lg i.floe{ border-radius:5px; transform:rotate(12deg); background:linear-gradient(145deg,#eaf7fb 0%,#b7d8e4 100%);
+              box-shadow:0 0 0 1px rgba(60,110,130,.45); }
+</style>
+</head>
+<body>
+<div id="app">
+  <canvas id="c"></canvas>
+
+  <div id="sysbar">
+    <button class="sysbtn" id="btnSound" type="button" aria-label="Toggle sound"></button>
+    <button class="sysbtn" id="btnPause" type="button" aria-label="Pause"></button>
+  </div>
+
+  <div class="overlay" id="ovMenu">
+    <h1 class="logo">Tide<br>line</h1>
+    <p class="tagline">Draw a line the sea will move</p>
+    <div class="legend">
+      <span class="lg"><i class="lamp"></i>Lanterns to gather</span>
+      <span class="lg"><i class="floe"></i>Floes to miss</span>
+    </div>
+    <div class="tiers" id="tierPick" role="radiogroup" aria-label="Difficulty"></div>
+    <button class="btn" id="btnPlay" type="button">Cast Off</button>
+    <p class="hint" id="menuHint"></p>
+  </div>
+
+  <div class="overlay" id="ovOver" hidden>
+    <h2 class="headline" id="overTitle">Holed</h2>
+    <p class="record" id="newRecord" hidden>New Record</p>
+    <div class="scorecard">
+      <div class="stat"><div class="k">Score</div><div class="v" id="finalScore">0</div></div>
+      <div class="stat best"><div class="k" id="bestLabel">Best</div><div class="v" id="bestScore">0</div></div>
+    </div>
+    <p class="runstats" id="runStats"></p>
+    <div class="suggest" id="suggestBox" hidden>
+      <p class="msg" id="suggestMsg"></p>
+      <button class="btn ghost" id="btnSuggest" type="button"></button>
+    </div>
+    <button class="btn" id="btnAgain" type="button">Again</button>
+    <button class="btn ghost" id="btnMenu" type="button">Menu</button>
+  </div>
+
+  <div class="overlay" id="ovPause" hidden>
+    <h2 class="headline">Paused</h2>
+    <button class="btn" id="btnResume" type="button">Resume</button>
+    <button class="btn ghost" id="btnQuit" type="button">Put In</button>
+  </div>
+</div>
+
+<script>
+(function () {
+  'use strict';
+  /* =========================================================================
+     1. PLATFORM BRIDGE — YouTube Playables SDK with safe fallbacks.
+     ========================================================================= */
+  var YT = (typeof window !== 'undefined' && window.ytgame) ? window.ytgame : null;
+
+  var Platform = {
+    audioAllowed: true, _firstFrameSent: false, _readySent: false,
+
+    init: function (onPause, onResume, onAudioChange) {
+      if (!YT) return;
+      try { if (YT.system && YT.system.onPause) YT.system.onPause(onPause); } catch (e) {}
+      try { if (YT.system && YT.system.onResume) YT.system.onResume(onResume); } catch (e) {}
+      try {
+        if (YT.system && typeof YT.system.isAudioEnabled === 'function') {
+          this.audioAllowed = !!YT.system.isAudioEnabled();
+        }
+        if (YT.system && YT.system.onAudioEnabledChange) {
+          YT.system.onAudioEnabledChange(function (on) { Platform.audioAllowed = !!on; onAudioChange(); });
+        }
+      } catch (e) {}
+    },
+    firstFrame: function () {
+      if (this._firstFrameSent) return;
+      this._firstFrameSent = true;
+      try { if (YT && YT.game && YT.game.firstFrameReady) YT.game.firstFrameReady(); } catch (e) {}
+    },
+    ready: function () {
+      if (this._readySent) return;
+      this._readySent = true;
+      try { if (YT && YT.game && YT.game.gameReady) YT.game.gameReady(); } catch (e) {}
+    }
+  };
+
+  /* =========================================================================
+     2. STORAGE
+     ========================================================================= */
+  var SAVE_KEY = 'tideline.v1';
+
+  var Store = {
+    data: {
+      bests: { cruise: 0, drive: 0, redline: 0 },
+      bestLanterns: { cruise: 0, drive: 0, redline: 0 },
+      bestChain: { cruise: 0, drive: 0, redline: 0 },
+      tier: 'drive', runs: 0, muted: false,
+      quickDeaths: 0, offeredDown: false, offeredUp: false
+    },
+    best: function (id) { return Store.data.bests[id || Store.data.tier] || 0; },
+    lanterns: function (id) { return Store.data.bestLanterns[id || Store.data.tier] || 0; },
+    chain: function (id) { return Store.data.bestChain[id || Store.data.tier] || 0; },
+
+    load: function (done) {
+      var IDS = ['cruise', 'drive', 'redline'];
+      var copyNums = function (src, dst) {
+        if (!src) return;
+        IDS.forEach(function (k) { if (typeof src[k] === 'number') dst[k] = src[k]; });
+      };
+      var finish = function (obj) {
+        if (obj && typeof obj === 'object') {
+          copyNums(obj.bests, Store.data.bests);
+          copyNums(obj.bestLanterns, Store.data.bestLanterns);
+          copyNums(obj.bestChain, Store.data.bestChain);
+          if (typeof obj.tier === 'string' && tierById(obj.tier).id === obj.tier) Store.data.tier = obj.tier;
+          if (typeof obj.runs === 'number') Store.data.runs = obj.runs;
+          if (typeof obj.muted === 'boolean') Store.data.muted = obj.muted;
+          if (typeof obj.quickDeaths === 'number') Store.data.quickDeaths = obj.quickDeaths;
+          if (typeof obj.offeredDown === 'boolean') Store.data.offeredDown = obj.offeredDown;
+          if (typeof obj.offeredUp === 'boolean') Store.data.offeredUp = obj.offeredUp;
+        }
+        done();
+      };
+      if (YT && YT.game && YT.game.loadData) {
+        var settled = false;
+        var timer = setTimeout(function () { if (!settled) { settled = true; finish(null); } }, 2500);
+        try {
+          YT.game.loadData().then(function (raw) {
+            if (settled) return; settled = true; clearTimeout(timer);
+            var o = null; try { o = JSON.parse(raw || '{}'); } catch (e) {}
+            finish(o);
+          })['catch'](function () {
+            if (settled) return; settled = true; clearTimeout(timer); finish(null);
+          });
+          return;
+        } catch (e) { if (!settled) { settled = true; clearTimeout(timer); } }
+      }
+      var local = null;
+      try { local = JSON.parse(window.localStorage.getItem(SAVE_KEY) || '{}'); } catch (e) {}
+      finish(local);
+    },
+
+    save: function () {
+      var raw = JSON.stringify(Store.data);
+      if (YT && YT.game && YT.game.saveData) {
+        try { YT.game.saveData(raw)['catch'](function () {}); return; } catch (e) {}
+      }
+      try { window.localStorage.setItem(SAVE_KEY, raw); } catch (e) {}
+    }
+  };
+
+
+
+  /* =========================================================================
+     3. AUDIO — water and glass. No files.
+     ========================================================================= */
+  var Sound = {
+    ctx: null, master: null, noiseBuf: null,
+    started: false, muted: false,
+    seaSrc: null, seaFilt: null, seaGain: null, seaLfo: null,
+
+    boot: function () {
+      if (this.ctx) return;
+      var AC = window.AudioContext || window.webkitAudioContext;
+      if (!AC) return;
+      try { this.ctx = new AC(); } catch (e) { return; }
+      var ctx = this.ctx;
+      this.master = ctx.createGain();
+      this.master.gain.value = 0;
+      this.master.connect(ctx.destination);
+
+      var len = Math.floor(ctx.sampleRate * 2.2);
+      var buf = ctx.createBuffer(1, len, ctx.sampleRate);
+      var ch = buf.getChannelData(0);
+      for (var i = 0; i < len; i++) ch[i] = Math.random() * 2 - 1;
+      this.noiseBuf = buf;
+
+      // The sea: one looping noise source under a slow filter sweep. Started
+      // once and left alive, because restarting noise per frame clicks.
+      var s = ctx.createBufferSource();
+      s.buffer = buf; s.loop = true;
+      var f = ctx.createBiquadFilter(); f.type = 'lowpass';
+      f.frequency.value = 520; f.Q.value = 0.6;
+      var g = ctx.createGain(); g.gain.value = 0;
+      var lfo = ctx.createOscillator(); lfo.frequency.value = 0.11;
+      var lg = ctx.createGain(); lg.gain.value = 240;
+      lfo.connect(lg); lg.connect(f.frequency);
+      s.connect(f); f.connect(g); g.connect(this.master);
+      s.start(0); lfo.start(0);
+      this.seaSrc = s; this.seaFilt = f; this.seaGain = g; this.seaLfo = lfo;
+
+      this.started = true;
+      this.applyVolume();
+    },
+
+    resumeCtx: function () {
+      if (this.ctx && this.ctx.state === 'suspended') { try { this.ctx.resume(); } catch (e) {} }
+    },
+    applyVolume: function () {
+      if (!this.master) return;
+      var on = !this.muted && Platform.audioAllowed;
+      try { this.master.gain.setTargetAtTime(on ? 0.85 : 0.0, this.ctx.currentTime, 0.02); } catch (e) {}
+    },
+    hardStop: function () {
+      if (!this.master) return;
+      try {
+        this.master.gain.setValueAtTime(0, this.ctx.currentTime);
+        this.seaGain.gain.setValueAtTime(0, this.ctx.currentTime);
+      } catch (e) {}
+    },
+    sea: function (on) {
+      if (!this.started) return;
+      try { this.seaGain.gain.setTargetAtTime(on ? 0.075 : 0, this.ctx.currentTime, 0.25); } catch (e) {}
+    },
+
+    blip: function (freq, dur, type, vol, delay) {
+      if (!this.started) return null;
+      var ctx = this.ctx, t = ctx.currentTime + (delay || 0);
+      var o = ctx.createOscillator(), g = ctx.createGain();
+      o.type = type || 'sine'; o.frequency.setValueAtTime(freq, t);
+      g.gain.setValueAtTime(0.0001, t);
+      g.gain.linearRampToValueAtTime(vol == null ? 0.2 : vol, t + 0.01);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+      o.connect(g); g.connect(this.master); o.start(t); o.stop(t + dur + 0.03);
+      return o;
+    },
+
+    noise: function (dur, f0, f1, vol, type, q) {
+      if (!this.started) return;
+      var ctx = this.ctx, t = ctx.currentTime;
+      var s = ctx.createBufferSource(); s.buffer = this.noiseBuf;
+      var bp = ctx.createBiquadFilter(); bp.type = type || 'bandpass';
+      bp.frequency.setValueAtTime(f0, t);
+      bp.frequency.exponentialRampToValueAtTime(Math.max(40, f1), t + dur);
+      bp.Q.value = q == null ? 1 : q;
+      var g = ctx.createGain();
+      g.gain.setValueAtTime(vol, t);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+      s.connect(bp); bp.connect(g); g.connect(this.master); s.start(t); s.stop(t + dur + 0.03);
+    },
+
+    ui: function () { this.blip(523.25, 0.09, 'triangle', 0.12); },
+
+    // Drawing: a soft wash under the finger, pitched by how much line is left.
+    draw: function (k) { this.noise(0.06, 900 + k * 1400, 500, 0.035, 'bandpass', 2); },
+
+    // A lantern aboard. The chime climbs with the chain, so a good run sounds
+    // like it is going well before you read the number.
+    lantern: function (chain) {
+      var base = 587.33 * Math.pow(1.0595, Math.min(chain, 14));
+      this.blip(base, 0.3, 'sine', 0.2);
+      this.blip(base * 1.5, 0.24, 'triangle', 0.1, 0.045);
+      if (chain >= 8) this.blip(base * 2, 0.3, 'sine', 0.1, 0.09);
+    },
+
+    repair: function () {
+      var N = [392.00, 523.25, 659.25, 880.00];
+      for (var i = 0; i < N.length; i++) this.blip(N[i], 0.4, 'triangle', 0.16, i * 0.07);
+    },
+
+    hit: function () {
+      if (!this.started) return;
+      this.blip(110, 0.55, 'sine', 0.3);
+      this.blip(82.41, 0.7, 'square', 0.12, 0.03);
+      this.noise(0.45, 1600, 180, 0.2, 'lowpass', 1.2);
+    },
+
+    adrift: function () { this.blip(196, 0.5, 'sine', 0.12); this.blip(146.83, 0.6, 'sine', 0.1, 0.09); },
+
+    over: function () {
+      this.sea(false);
+      this.blip(293.66, 0.9, 'sine', 0.2);
+      this.blip(220.00, 1.1, 'sine', 0.19, 0.1);
+      this.blip(146.83, 1.4, 'sine', 0.17, 0.24);
+    }
+  };
+
+  /* =========================================================================
+     4. TUNING
+
+     One rule makes this game: the line you draw is drawn IN the water, and the
+     water moves. Every point of your route is carried by the current at the
+     same speed as everything else floating in it, so a straight line across a
+     fast band is a curve by the time the boat gets there.
+
+     The boat itself is under power and follows the route exactly. The sea does
+     not push the boat — it moves your plan. That separation is what keeps the
+     mechanic legible: when you are off course, it is because the water took
+     your line somewhere, and you can watch it happen.
+     ========================================================================= */
+  var LOGICAL_H  = 960;
+  var ARENA_W    = 428;     // fixed logical size, never a fraction of the view
+  var ARENA_H    = 690;
+  var ARENA_TOP  = 196;
+  var ARENA_BOT  = ARENA_TOP + ARENA_H;
+
+  var BOAT_SPEED = 205;     // units per second under power
+  var BOAT_R     = 15;
+  var LANT_R     = 16;
+  var ROUTE_STEP = 15;      // spacing of stored route points
+  var ROUTE_MAX  = 1500;    // total drawable length, about seven seconds of way
+  /* Five, not eight. At eight the run-length probe never once saw a plank
+     mended in any tier: the auto-helm gathered about a lantern every four
+     seconds and was holed every ten, so a whole system of the game sat there
+     doing nothing. A reward nobody reaches is not a reward. */
+  var CHAIN_FIX  = 5;       // lanterns in a row that mend a plank
+  var ADRIFT_TURN = 1.1;
+  var FLOE_DRAG  = 0.60;    // how much of the surface set a floe takes
+
+  /* -------------------------------------------------------------------------
+     Difficulty is one measured number: DRIFT — how fast the water moves
+     compared with how fast the boat does.
+
+         drift = current speed / boat speed
+
+     At 0.22 a line drawn straight stays roughly straight and you can plan two
+     seconds ahead. At 0.46 anything you draw is visibly a different shape by
+     the time you are halfway along it, and the only way to fly it is to draw
+     into where the water is going.
+
+     Nothing about the input changes between tiers: same drag, same boat speed,
+     same route length. All of it is in the water.
+     ------------------------------------------------------------------------- */
+  var TIERS = [
+    { id: 'cruise', name: 'Cruise', blurb: 'A gentle set',
+      drift: 0.22, set: 0.34, swirl: 0.9,
+      floeEvery: 3.40, floeMin: 2.10, lantEvery: 1.00,
+      hull: 4, maxHull: 6, scoreMul: 0.7 },
+    { id: 'drive', name: 'Drive', blurb: 'The real thing',
+      drift: 0.34, set: 0.40, swirl: 1.0,
+      floeEvery: 2.70, floeMin: 1.50, lantEvery: 1.05,
+      hull: 3, maxHull: 5, scoreMul: 1.0 },
+    { id: 'redline', name: 'Redline', blurb: 'Running water',
+      drift: 0.46, set: 0.46, swirl: 1.15,
+      floeEvery: 2.10, floeMin: 1.10, lantEvery: 1.15,
+      hull: 2, maxHull: 4, scoreMul: 1.45 }
+  ];
+
+  function tierById(id) {
+    for (var i = 0; i < TIERS.length; i++) if (TIERS[i].id === id) return TIERS[i];
+    return TIERS[1];
+  }
+  function tierIndex(id) {
+    for (var i = 0; i < TIERS.length; i++) if (TIERS[i].id === id) return i;
+    return 1;
+  }
+
+  function clamp(v, a, b) { return v < a ? a : (v > b ? b : v); }
+  function lerp(a, b, t) { return a + (b - a) * t; }
+  function rnd(a, b) { return a + Math.random() * (b - a); }
+  function rndi(a, b) { return Math.floor(rnd(a, b + 1)); }
+  function fmt(n) { return Math.floor(n).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ','); }
+
+  function roundRect(c, x, y, w, h, r) {
+    r = Math.min(r, Math.abs(w) / 2, Math.abs(h) / 2);
+    c.beginPath();
+    c.moveTo(x + r, y);
+    c.arcTo(x + w, y, x + w, y + h, r);
+    c.arcTo(x + w, y + h, x, y + h, r);
+    c.arcTo(x, y + h, x, y, r);
+    c.arcTo(x, y, x + w, y, r);
+    c.closePath();
+  }
+
+  /* =========================================================================
+     5. VIEW / SPRITE CACHE
+     ========================================================================= */
+  var app = document.getElementById('app');
+  var canvas = document.getElementById('c');
+  var ctx = canvas.getContext('2d', { alpha: false });
+
+  var view = { w: 540, h: LOGICAL_H, scale: 1, dpr: 1 };
+  var sprites = {};
+  var spriteQ = 2;
+  var bgFull = null;
+
+  function sprite(key, w, h, paint) {
+    var k = key + '|' + Math.round(w) + 'x' + Math.round(h) + '@' + spriteQ;
+    var hit = sprites[k];
+    if (hit) return hit;
+    var cv = document.createElement('canvas');
+    cv.width = Math.max(1, Math.ceil(w * spriteQ));
+    cv.height = Math.max(1, Math.ceil(h * spriteQ));
+    var c2 = cv.getContext('2d');
+    c2.setTransform(spriteQ, 0, 0, spriteQ, 0, 0);
+    paint(c2, w, h);
+    hit = { cv: cv, w: w, h: h };
+    sprites[k] = hit;
+    return hit;
+  }
+
+  function blit(s, cx, cy) { ctx.drawImage(s.cv, cx - s.w / 2, cy - s.h / 2, s.w, s.h); }
+
+  function layout() {
+    var cw = Math.max(1, app.clientWidth || window.innerWidth);
+    var chh = Math.max(1, app.clientHeight || window.innerHeight);
+    var dpr = Math.min(window.devicePixelRatio || 1, 2);
+
+    // Past this many device pixels, drop resolution rather than frames.
+    var budget = 2.6e6;
+    var pxCount = cw * chh * dpr * dpr;
+    if (pxCount > budget) dpr = Math.max(1, dpr * Math.sqrt(budget / pxCount));
+
+    canvas.width = Math.round(cw * dpr);
+    canvas.height = Math.round(chh * dpr);
+    canvas.style.width = cw + 'px';
+    canvas.style.height = chh + 'px';
+
+    view.dpr = dpr;
+    view.scale = chh / LOGICAL_H;
+    view.h = LOGICAL_H;
+    view.w = cw / view.scale;
+
+    ctx.setTransform(dpr * view.scale, 0, 0, dpr * view.scale, 0, 0);
+    spriteQ = clamp(view.scale * view.dpr, 1, 2.5);
+    sprites = {};
+    bgFull = null;
+  }
+
+  function arenaX0() { return (view.w - ARENA_W) / 2; }
+  function arenaCX() { return view.w / 2; }
+  function arenaCY() { return ARENA_TOP + ARENA_H / 2; }
+
+  /* -------------------------------------------------------------------------
+     The coast and the open sea outside the channel never change, so they are
+     painted once per layout at real canvas resolution and blitted 1:1.
+     Stretching a small texture over the screen every frame costs per
+     destination pixel, and that was the 30-versus-60 fps gap in game three.
+     ------------------------------------------------------------------------- */
+  function backgroundFull() {
+    if (bgFull && bgFull.width === canvas.width && bgFull.height === canvas.height) return bgFull;
+    var cv = document.createElement('canvas');
+    cv.width = Math.max(1, canvas.width);
+    cv.height = Math.max(1, canvas.height);
+    var c = cv.getContext('2d');
+    c.setTransform(view.dpr * view.scale, 0, 0, view.dpr * view.scale, 0, 0);
+
+    var W = view.w, H = view.h, X0 = arenaX0();
+
+    c.fillStyle = '#bfeae6';
+    c.fillRect(0, 0, W, H);
+
+    // Shallows either side of the channel, then the sand they run onto.
+    var shal = c.createLinearGradient(0, 0, 0, H);
+    shal.addColorStop(0, '#9bdcd6');
+    shal.addColorStop(1, '#7fcfcb');
+    c.fillStyle = shal;
+    c.fillRect(0, 0, W, H);
+
+    /* The channel: deeper, cooler, and unmistakably a lane. It runs 84 units
+       above the water you can steer in, because lanterns and floes drift in
+       from up there and you want to see them coming while they are still on
+       the water rather than popping out of the sandbanks. */
+    var top = ARENA_TOP - 84;
+    var deep = c.createLinearGradient(0, top, 0, ARENA_BOT + 40);
+    deep.addColorStop(0, '#1a8a90');
+    deep.addColorStop(0.22, '#127e86');
+    deep.addColorStop(0.62, '#0e6f7a');
+    deep.addColorStop(1, '#0c5f6c');
+    c.fillStyle = deep;
+    roundRect(c, X0, top, ARENA_W, ARENA_H + 84, 26);
+    c.fill();
+
+    c.strokeStyle = 'rgba(255,255,255,.30)';
+    c.lineWidth = 4;
+    roundRect(c, X0, top, ARENA_W, ARENA_H + 84, 26);
+    c.stroke();
+
+    // The line the boat may not cross, marked the way a harbour marks one.
+    c.strokeStyle = 'rgba(255,255,255,.26)';
+    c.lineWidth = 3;
+    c.setLineDash([12, 10]);
+    c.beginPath(); c.moveTo(X0 + 8, ARENA_TOP); c.lineTo(X0 + ARENA_W - 8, ARENA_TOP); c.stroke();
+    c.setLineDash([]);
+
+    // Sandbanks outside, drawn only where there is room for them.
+    if (X0 > 46) {
+      var R = 1234567;
+      var rr = function () { R = (R * 1664525 + 1013904223) >>> 0; return R / 4294967296; };
+      c.fillStyle = '#f3dfa6';
+      for (var i = 0; i < 26; i++) {
+        var left = rr() < 0.5;
+        var bw = 40 + rr() * 120, bh = 22 + rr() * 54;
+        var bx = left ? rr() * Math.max(8, X0 - bw - 16) : X0 + ARENA_W + 16 + rr() * Math.max(8, W - X0 - ARENA_W - bw - 16);
+        var by = rr() * (H - bh);
+        c.beginPath();
+        c.ellipse(bx + bw / 2, by + bh / 2, bw / 2, bh / 2, rr() * 1.4, 0, Math.PI * 2);
+        c.fill();
+      }
+      c.fillStyle = 'rgba(255,255,255,.34)';
+      for (var j = 0; j < 54; j++) {
+        var sx2 = rr() * W, sy2 = rr() * H;
+        if (sx2 > X0 - 30 && sx2 < X0 + ARENA_W + 30) continue;
+        roundRect(c, sx2, sy2, 30 + rr() * 46, 3.5, 2); c.fill();
+      }
+      // Weed on the banks, so a wide screen has something to look at.
+      for (var m = 0; m < 22; m++) {
+        var wx = rr() * W, wy = rr() * H;
+        if (wx > X0 - 46 && wx < X0 + ARENA_W + 46) continue;
+        c.strokeStyle = 'rgba(46,140,124,.36)';
+        c.lineWidth = 3 + rr() * 2;
+        c.lineCap = 'round';
+        for (var b2 = 0; b2 < 4; b2++) {
+          var bx2 = wx + (b2 - 1.5) * 9;
+          c.beginPath();
+          c.moveTo(bx2, wy);
+          c.quadraticCurveTo(bx2 + 10 - rr() * 20, wy - 16, bx2 + 4 - rr() * 8, wy - 30 - rr() * 14);
+          c.stroke();
+        }
+      }
+    }
+
+    // A soft vignette so the eye lands in the channel and not on the banks.
+    var vg = c.createRadialGradient(W / 2, arenaCY(), ARENA_W * 0.5, W / 2, arenaCY(), Math.max(W, H) * 0.72);
+    vg.addColorStop(0, 'rgba(6,58,62,0)');
+    vg.addColorStop(1, 'rgba(6,58,62,.26)');
+    c.fillStyle = vg;
+    c.fillRect(0, 0, W, H);
+
+    bgFull = cv;
+    return cv;
+  }
+
+  /* =========================================================================
+     6. THE WATER
+
+     A smooth, slowly turning flow field. Everything afloat is carried by it —
+     the lanterns, the floes, the streaks that show it, and the line you draw.
+     ========================================================================= */
+  var _f = { x: 0, y: 0 };
+
+  function flowAt(x, y, out) {
+    var T = S.tier, t = S.time;
+    var s = T.drift * BOAT_SPEED;
+    var nx = (x - arenaCX()) / 110, ny = (y - arenaCY()) / 110;
+    var vx = Math.sin(ny * 1.05 + t * 0.33) + 0.62 * Math.sin((nx + ny) * 0.72 - t * 0.22);
+    var vy = Math.cos(nx * 0.88 - t * 0.27) + 0.50 * Math.sin((nx - ny) * 0.81 + t * 0.30);
+    out = out || _f;
+    /* Sideways is where the swirl lives — that is the component that bends the
+       line you drew. Down the channel is a steady set with only a little
+       variation, because the first version let the eddies cancel the set
+       outright: everything afloat hung about at the top of the channel and the
+       lower two thirds of the water never had anything in it. */
+    out.x = vx * s * T.swirl * 0.60;
+    out.y = vy * s * T.swirl * 0.22 + s * (0.55 + T.set);
+    return out;
+  }
+
+  /* =========================================================================
+     7. RUN STATE
+     ========================================================================= */
+  var S = {
+    mode: 'menu', tier: TIERS[1],
+
+    boat: { x: 0, y: 0, ang: -Math.PI / 2 },
+    route: [], routeLen: 0, drawing: false, drawFrom: null,
+
+    hull: 3, maxHull: 5, repairs: 0,
+    chain: 0, toFix: 0, bestChain: 0,
+    lanterns: 0, hits: 0, score: 0,
+
+    lants: [], floes: [], streaks: [],
+    spawnL: 0, spawnF: 0, invuln: 0,
+
+    particles: [], floats: [],
+    shake: 0, flash: 0, flashCol: '255,255,255',
+    toastT: 0, toastMsg: '', toastSub: '',
+    deathT: 0, time: 0
+  };
+
+  var overTitleText = 'Holed';
+
+  function resetRun() {
+    var T = tierById(Store.data.tier);
+    S.tier = T;
+    S.mode = 'menu';
+    S.boat.x = arenaCX(); S.boat.y = ARENA_BOT - 130; S.boat.ang = -Math.PI / 2;
+    S.route.length = 0; S.routeLen = 0; S.drawing = false; S.drawFrom = null;
+    S.hull = T.hull; S.maxHull = T.maxHull; S.repairs = 0;
+    S.chain = 0; S.toFix = 0; S.bestChain = 0;
+    S.lanterns = 0; S.hits = 0; S.score = 0;
+    S.lants.length = 0; S.floes.length = 0;
+    S.spawnL = 0.5; S.spawnF = 1.4; S.invuln = 0;
+    S.particles.length = 0; S.floats.length = 0;
+    S.shake = 0; S.flash = 0;
+    S.toastT = 0; S.deathT = 0; S.time = 0;
+    seedStreaks();
+  }
+
+  function seedStreaks() {
+    S.streaks.length = 0;
+    for (var i = 0; i < 84; i++) {
+      S.streaks.push({
+        x: arenaX0() + Math.random() * ARENA_W,
+        y: ARENA_TOP + Math.random() * ARENA_H,
+        px: 0, py: 0, life: rnd(0.4, 2.6)
+      });
+    }
+    for (var j = 0; j < S.streaks.length; j++) { S.streaks[j].px = S.streaks[j].x; S.streaks[j].py = S.streaks[j].y; }
+  }
+
+  function toast(msg, sub) { S.toastMsg = msg; S.toastSub = sub || ''; S.toastT = 2.6; }
+
+  function floatText(x, y, text, col, size) {
+    S.floats.push({ x: x, y: y, text: text, col: col, size: size || 26, life: 1.15, max: 1.15 });
+  }
+
+  function burst(x, y, col, n, spread, speed) {
+    for (var i = 0; i < n; i++) {
+      var a = rnd(0, Math.PI * 2), sp = rnd(speed * 0.3, speed);
+      S.particles.push({
+        x: x + rnd(-spread, spread), y: y + rnd(-spread, spread),
+        vx: Math.cos(a) * sp, vy: Math.sin(a) * sp,
+        life: rnd(0.35, 0.85), max: 0.85, r: rnd(2, 5.5), col: col
+      });
+    }
+  }
+
+  /* =========================================================================
+     8. THINGS AFLOAT
+     ========================================================================= */
+  function spawnLantern() {
+    S.lants.push({
+      x: arenaX0() + rnd(28, ARENA_W - 28),
+      y: ARENA_TOP - rnd(20, 70),
+      bob: rnd(0, 6.28), r: LANT_R
+    });
+  }
+
+  function spawnFloe() {
+    var r = rnd(20, 36);
+    var pts = [], n = rndi(7, 9);
+    for (var i = 0; i < n; i++) pts.push(rnd(0.72, 1.12));
+    S.floes.push({
+      x: arenaX0() + rnd(30, ARENA_W - 30),
+      y: ARENA_TOP - rnd(30, 110),
+      r: r, rot: rnd(0, 6.28), spin: rnd(-0.5, 0.5), pts: pts
+    });
+  }
+
+  function driftAll(dt) {
+    var i, o, f;
+    for (i = S.lants.length - 1; i >= 0; i--) {
+      o = S.lants[i];
+      f = flowAt(o.x, o.y);
+      o.x += f.x * dt; o.y += f.y * dt;
+      o.bob += dt * 2.4;
+      if (o.y > ARENA_BOT + 70) S.lants.splice(i, 1);
+      else if (o.x < arenaX0() - 60 || o.x > arenaX0() + ARENA_W + 60) S.lants.splice(i, 1);
+    }
+    for (i = S.floes.length - 1; i >= 0; i--) {
+      o = S.floes[i];
+      f = flowAt(o.x, o.y);
+      // Floes sit deep and drag: they take about three fifths of the surface
+      // set. That lag is the whole hazard. A line drawn in the water floats
+      // WITH the water, so it keeps pointing at the lanterns, which float with
+      // it too — but the ice slides across your plan the whole time it runs.
+      o.x += f.x * FLOE_DRAG * dt; o.y += f.y * FLOE_DRAG * dt;
+      o.rot += o.spin * dt;
+      if (o.y > ARENA_BOT + 90) S.floes.splice(i, 1);
+      else if (o.x < arenaX0() - 80 || o.x > arenaX0() + ARENA_W + 80) S.floes.splice(i, 1);
+    }
+    for (i = 0; i < S.streaks.length; i++) {
+      var st = S.streaks[i];
+      st.px = st.x; st.py = st.y;
+      f = flowAt(st.x, st.y);
+      st.x += f.x * dt; st.y += f.y * dt;
+      st.life -= dt;
+      if (st.life <= 0 || st.y > ARENA_BOT || st.x < arenaX0() || st.x > arenaX0() + ARENA_W) {
+        st.x = arenaX0() + Math.random() * ARENA_W;
+        st.y = ARENA_TOP + Math.random() * ARENA_H * 0.55;
+        st.px = st.x; st.py = st.y;
+        st.life = rnd(1.2, 3.0);
+      }
+    }
+  }
+
+  /* =========================================================================
+     9. THE ROUTE — drawn in the water, and the water moves it.
+     ========================================================================= */
+  function clearRoute() { S.route.length = 0; S.routeLen = 0; }
+
+  function routeLength() {
+    var L = 0, px = S.boat.x, py = S.boat.y;
+    for (var i = 0; i < S.route.length; i++) {
+      L += Math.hypot(S.route[i].x - px, S.route[i].y - py);
+      px = S.route[i].x; py = S.route[i].y;
+    }
+    return L;
+  }
+
+  /* The stored length is derived, never accumulated. Points get clamped to the
+     channel as they drift, which quietly shortens the route's real geometry —
+     an accumulated counter then never returns to zero and the gauge sticks a
+     few per cent short of full for the rest of the voyage. */
+  function pushRoutePoint(x, y) {
+    S.routeLen = routeLength();
+    x = clamp(x, arenaX0() + 6, arenaX0() + ARENA_W - 6);
+    y = clamp(y, ARENA_TOP + 6, ARENA_BOT - 6);
+    var last = S.route.length ? S.route[S.route.length - 1] : S.boat;
+    var dx = x - last.x, dy = y - last.y;
+    var d = Math.hypot(dx, dy);
+    if (d < ROUTE_STEP) return;
+    var steps = Math.min(12, Math.floor(d / ROUTE_STEP));
+    for (var i = 1; i <= steps; i++) {
+      if (S.routeLen >= ROUTE_MAX) return;
+      var k = (i * ROUTE_STEP) / d;
+      S.route.push({ x: last.x + dx * k, y: last.y + dy * k });
+      S.routeLen += ROUTE_STEP;
+    }
+  }
+
+  // Every point of the route is in the water, so every point drifts.
+  function driftRoute(dt) {
+    var x0 = arenaX0(), f;
+    for (var i = 0; i < S.route.length; i++) {
+      var p = S.route[i];
+      f = flowAt(p.x, p.y);
+      p.x = clamp(p.x + f.x * dt, x0 + 4, x0 + ARENA_W - 4);
+      p.y = clamp(p.y + f.y * dt, ARENA_TOP + 4, ARENA_BOT - 4);
+    }
+  }
+
+  function followRoute(dt) {
+    var move = BOAT_SPEED * dt;
+    while (move > 0 && S.route.length) {
+      var p = S.route[0];
+      var dx = p.x - S.boat.x, dy = p.y - S.boat.y;
+      var d = Math.hypot(dx, dy);
+      if (d < 0.0001) { S.route.shift(); continue; }
+      S.boat.ang = Math.atan2(dy, dx);
+      if (d <= move) {
+        S.boat.x = p.x; S.boat.y = p.y;
+        move -= d;
+        S.route.shift();
+        S.routeLen = Math.max(0, S.routeLen - d);
+      } else {
+        S.boat.x += dx / d * move;
+        S.boat.y += dy / d * move;
+        S.routeLen = Math.max(0, S.routeLen - move);
+        move = 0;
+      }
+    }
+  }
+
+  // No line left: the boat has no say in the matter and goes where the sea does.
+  function driftBoat(dt) {
+    var f = flowAt(S.boat.x, S.boat.y);
+    S.boat.x = clamp(S.boat.x + f.x * dt, arenaX0() + BOAT_R, arenaX0() + ARENA_W - BOAT_R);
+    S.boat.y = clamp(S.boat.y + f.y * dt, ARENA_TOP + BOAT_R, ARENA_BOT - BOAT_R);
+    S.boat.ang += ADRIFT_TURN * dt * 0.5;
+  }
+
+  /* =========================================================================
+     10. COLLECTING, HOLING, MENDING
+
+     A plank is lost by exactly one floe and mended only by a chain of eight
+     lanterns, and the voyage ends when the last plank goes — which is the
+     identity the gameplay tests lean on:
+
+         floes hit  ===  the tier's starting planks  +  planks mended
+     ========================================================================= */
+  function multiplier() { return 1 + 0.1 * Math.min(S.chain, 20); }
+
+  function collect(o, i) {
+    S.lants.splice(i, 1);
+    S.lanterns++;
+    S.chain++;
+    S.toFix++;
+    if (S.chain > S.bestChain) S.bestChain = S.chain;
+    var gain = Math.round(25 * multiplier() * S.tier.scoreMul);
+    S.score += gain;
+    Sound.lantern(S.chain);
+    floatText(o.x, o.y - 26, '+' + gain, '#ffd76a', 24);
+    burst(o.x, o.y, '#ffd76a', 9, 8, 150);
+
+    if (S.toFix >= CHAIN_FIX) {
+      S.toFix = 0;
+      if (S.hull < S.maxHull) {
+        S.hull++; S.repairs++;
+        Sound.repair();
+        floatText(S.boat.x, S.boat.y - 46, 'PLANK MENDED', '#7fe6c4', 22);
+        burst(S.boat.x, S.boat.y, '#7fe6c4', 16, 12, 200);
+      }
+    }
+  }
+
+  function hole(o) {
+    S.hits++;
+    S.hull--;
+    S.chain = 0; S.toFix = 0;
+    S.invuln = 1.55;
+    S.shake = 17;
+    S.flash = 0.5; S.flashCol = '255,238,214';
+    Sound.hit();
+    burst(S.boat.x, S.boat.y, '#eaf7fb', 24, 14, 300);
+    // Knocked off course: whatever you had planned is gone with the impact.
+    clearRoute();
+    if (S.hull <= 0) { gameOver('Holed'); return; }
+    floatText(S.boat.x, S.boat.y - 46, S.hull + ' LEFT', '#ff9d7a', 24);
+  }
+
+  function gameOver(title) {
+    overTitleText = title || 'Holed';
+    S.mode = 'dead';
+    S.deathT = 1.2;
+    Sound.sea(false);
+    Sound.over();
+  }
+
+  function collide() {
+    var i, o, d;
+    for (i = S.lants.length - 1; i >= 0; i--) {
+      o = S.lants[i];
+      d = Math.hypot(o.x - S.boat.x, o.y - S.boat.y);
+      if (d < BOAT_R + o.r) { collect(o, i); }
+    }
+    if (S.invuln > 0) return;
+    for (i = 0; i < S.floes.length; i++) {
+      o = S.floes[i];
+      d = Math.hypot(o.x - S.boat.x, o.y - S.boat.y);
+      if (d < BOAT_R + o.r * 0.82) { hole(o); return; }
+    }
+  }
+
+  /* =========================================================================
+     11. UPDATE
+     ========================================================================= */
+  function update(dt) {
+    updateFx(dt);
+
+    if (S.mode === 'dead') {
+      S.deathT -= dt;
+      if (S.deathT <= 0 && !gameOverShown) showGameOver();
+      return;
+    }
+    if (S.mode !== 'play') return;
+
+    S.time += dt;
+    S.invuln = Math.max(0, S.invuln - dt);
+
+    var T = S.tier;
+    var floeEvery = Math.max(T.floeMin, T.floeEvery * (1 - S.time * 0.0055));
+    S.spawnF -= dt;
+    if (S.spawnF <= 0) { S.spawnF = floeEvery * rnd(0.75, 1.3); spawnFloe(); }
+    S.spawnL -= dt;
+    if (S.spawnL <= 0) { S.spawnL = T.lantEvery * rnd(0.7, 1.35); spawnLantern(); }
+
+    driftAll(dt);
+    driftRoute(dt);
+
+    if (S.route.length) followRoute(dt);
+    else driftBoat(dt);
+    S.routeLen = S.route.length ? routeLength() : 0;
+
+    collide();
+  }
+
+  /* Screen effects decay on real time and in every mode, so a run that ends on
+     a flash does not leave the flash painted on forever. That bug shipped once
+     in this portfolio; it does not ship again. */
+  function updateFx(dt) {
+    S.shake *= Math.pow(0.0016, dt);
+    if (S.shake < 0.05) S.shake = 0;
+    S.flash = Math.max(0, S.flash - dt * 2.1);
+    if (S.toastT > 0) S.toastT -= dt;
+
+    var i;
+    for (i = S.particles.length - 1; i >= 0; i--) {
+      var p = S.particles[i];
+      p.life -= dt;
+      if (p.life <= 0) { S.particles.splice(i, 1); continue; }
+      p.vx *= Math.pow(0.12, dt); p.vy *= Math.pow(0.12, dt);
+      p.x += p.vx * dt; p.y += p.vy * dt;
+    }
+    for (i = S.floats.length - 1; i >= 0; i--) {
+      var f = S.floats[i];
+      f.life -= dt;
+      if (f.life <= 0) { S.floats.splice(i, 1); continue; }
+      f.y -= 52 * dt;
+    }
+  }
+
+  /* =========================================================================
+     12. INPUT — one drag, identical on every tier.
+     ========================================================================= */
+  function localPoint(e) {
+    var r = canvas.getBoundingClientRect();
+    return {
+      x: (e.clientX - r.left) / view.scale,
+      y: (e.clientY - r.top) / view.scale
+    };
+  }
+
+  app.addEventListener('pointerdown', function (e) {
+    if (e.target && e.target.closest && e.target.closest('#sysbar')) return;
+    e.preventDefault();
+    Sound.boot(); Sound.resumeCtx();
+    if (S.mode !== 'play') return;
+    S.drawing = true;
+    // A new stroke replaces the old plan. The line always starts at the boat.
+    clearRoute();
+    var p = localPoint(e);
+    pushRoutePoint(p.x, p.y);
+    if (app.setPointerCapture) { try { app.setPointerCapture(e.pointerId); } catch (er) {} }
+  }, { passive: false });
+
+  app.addEventListener('pointermove', function (e) {
+    if (!S.drawing || S.mode !== 'play') return;
+    e.preventDefault();
+    var p = localPoint(e);
+    var before = S.route.length;
+    pushRoutePoint(p.x, p.y);
+    if (S.route.length !== before) Sound.draw(1 - S.routeLen / ROUTE_MAX);
+  }, { passive: false });
+
+  function endDraw() { S.drawing = false; }
+  app.addEventListener('pointerup', endDraw);
+  app.addEventListener('pointercancel', endDraw);
+  window.addEventListener('blur', endDraw);
+
+  document.addEventListener('keydown', function (e) {
+    var k = e.key;
+    if (k === 'Escape' || k === 'p' || k === 'P') {
+      e.preventDefault();
+      if (S.mode === 'play') pauseGame(); else if (S.mode === 'paused') resumeGame();
+      return;
+    }
+    if (k === 'm' || k === 'M') { e.preventDefault(); Sound.boot(); Sound.resumeCtx(); toggleMute(); }
+  });
+
+  /* =========================================================================
+     13. RENDER
+     ========================================================================= */
+  var FONT = ' system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif';
+
+  function label(text, x, y, size, col, align, stroke) {
+    ctx.font = '900 ' + size + 'px' + FONT;
+    ctx.textAlign = align || 'center';
+    ctx.textBaseline = 'middle';
+    if (stroke) {
+      ctx.lineJoin = 'round';
+      ctx.lineWidth = Math.max(3, size * 0.16);
+      ctx.strokeStyle = stroke;
+      ctx.strokeText(text, x, y);
+    }
+    ctx.fillStyle = col;
+    ctx.fillText(text, x, y);
+  }
+
+  function render() {
+    ctx.save();
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.drawImage(backgroundFull(), 0, 0);
+    ctx.restore();
+
+    var sx = 0, sy = 0;
+    if (S.shake > 0.1) { sx = rnd(-S.shake, S.shake); sy = rnd(-S.shake * 0.6, S.shake * 0.6); }
+    ctx.save();
+    ctx.translate(sx, sy);
+
+    drawStreaks();
+    drawRoute();
+    drawFloes();
+    drawLanterns();
+    drawBoat();
+    drawParticles();
+
+    ctx.restore();
+
+    drawHud();
+    drawFloats();
+    drawToast();
+
+    if (S.flash > 0.001) {
+      ctx.fillStyle = 'rgba(' + S.flashCol + ',' + (S.flash * 0.45).toFixed(3) + ')';
+      ctx.fillRect(0, 0, view.w, view.h);
+    }
+  }
+
+  /* The current, drawn. Every streak is a scrap of water being carried by the
+     same field that carries your line, so what you see is exactly what will
+     happen to what you draw. */
+  function drawStreaks() {
+    ctx.lineCap = 'round';
+    for (var i = 0; i < S.streaks.length; i++) {
+      var s = S.streaks[i];
+      var a = clamp(s.life * 0.5, 0, 1) * 0.5;
+      if (a < 0.02) continue;
+      ctx.globalAlpha = a;
+      ctx.strokeStyle = '#8fe3e0';
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.moveTo(s.px, s.py);
+      ctx.lineTo(s.x, s.y);
+      ctx.stroke();
+    }
+    ctx.globalAlpha = 1;
+  }
+
+  function drawRoute() {
+    if (!S.route.length) return;
+    ctx.lineJoin = 'round'; ctx.lineCap = 'round';
+
+    ctx.strokeStyle = 'rgba(255,255,255,.30)';
+    ctx.lineWidth = 13;
+    ctx.beginPath();
+    ctx.moveTo(S.boat.x, S.boat.y);
+    for (var i = 0; i < S.route.length; i++) ctx.lineTo(S.route[i].x, S.route[i].y);
+    ctx.stroke();
+
+    ctx.strokeStyle = '#ffe9a8';
+    ctx.lineWidth = 5;
+    ctx.beginPath();
+    ctx.moveTo(S.boat.x, S.boat.y);
+    for (var j = 0; j < S.route.length; j++) ctx.lineTo(S.route[j].x, S.route[j].y);
+    ctx.stroke();
+
+    // A tick for every second of the way ahead. They drift with the line, so
+    // "where I will be in two seconds" stays honest as the water moves it.
+    var per = Math.max(1, Math.round(BOAT_SPEED / ROUTE_STEP));
+    ctx.strokeStyle = 'rgba(255,255,255,.85)';
+    ctx.lineWidth = 3;
+    for (var k = per - 1; k < S.route.length; k += per) {
+      var p = S.route[k], q = S.route[k - 1] || S.boat;
+      var dx = p.x - q.x, dy = p.y - q.y, d = Math.hypot(dx, dy) || 1;
+      var nx = -dy / d * 8, ny = dx / d * 8;
+      ctx.beginPath();
+      ctx.moveTo(p.x - nx, p.y - ny);
+      ctx.lineTo(p.x + nx, p.y + ny);
+      ctx.stroke();
+    }
+
+    var end = S.route[S.route.length - 1];
+    ctx.fillStyle = '#ffe9a8';
+    ctx.beginPath(); ctx.arc(end.x, end.y, 5.5, 0, Math.PI * 2); ctx.fill();
+  }
+
+  function drawFloes() {
+    for (var i = 0; i < S.floes.length; i++) {
+      var o = S.floes[i];
+      ctx.save();
+      ctx.translate(o.x, o.y);
+      ctx.rotate(o.rot);
+      ctx.beginPath();
+      for (var k = 0; k < o.pts.length; k++) {
+        var a = k / o.pts.length * Math.PI * 2;
+        var rr = o.r * o.pts[k];
+        var px = Math.cos(a) * rr, py = Math.sin(a) * rr;
+        if (k === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+      }
+      ctx.closePath();
+      ctx.fillStyle = '#d8ecf4';
+      ctx.fill();
+      ctx.fillStyle = '#f4fbfe';
+      ctx.beginPath();
+      for (var k2 = 0; k2 < o.pts.length; k2++) {
+        var a2 = k2 / o.pts.length * Math.PI * 2;
+        var r2 = o.r * o.pts[k2] * 0.62;
+        var x2 = Math.cos(a2) * r2 - o.r * 0.12, y2 = Math.sin(a2) * r2 - o.r * 0.12;
+        if (k2 === 0) ctx.moveTo(x2, y2); else ctx.lineTo(x2, y2);
+      }
+      ctx.closePath();
+      ctx.fill();
+      ctx.strokeStyle = 'rgba(52,108,130,.55)';
+      ctx.lineWidth = 2.5;
+      ctx.beginPath();
+      for (var k3 = 0; k3 < o.pts.length; k3++) {
+        var a3 = k3 / o.pts.length * Math.PI * 2;
+        var r3 = o.r * o.pts[k3];
+        var x3 = Math.cos(a3) * r3, y3 = Math.sin(a3) * r3;
+        if (k3 === 0) ctx.moveTo(x3, y3); else ctx.lineTo(x3, y3);
+      }
+      ctx.closePath();
+      ctx.stroke();
+      ctx.restore();
+    }
+  }
+
+  function lanternSprite() {
+    var R = LANT_R * 3.1;
+    return sprite('lant', R * 2, R * 2, function (c, w, h) {
+      var g = c.createRadialGradient(w / 2, h / 2, 2, w / 2, h / 2, R);
+      g.addColorStop(0, 'rgba(255,226,140,.85)');
+      g.addColorStop(0.24, 'rgba(255,198,86,.40)');
+      g.addColorStop(1, 'rgba(255,190,70,0)');
+      c.fillStyle = g;
+      c.fillRect(0, 0, w, h);
+      // The float itself: a glass ball in a rope collar.
+      c.fillStyle = '#e8952a';
+      c.beginPath(); c.arc(w / 2, h / 2, LANT_R, 0, Math.PI * 2); c.fill();
+      c.fillStyle = '#ffc24d';
+      c.beginPath(); c.arc(w / 2, h / 2 - 1.5, LANT_R - 3, 0, Math.PI * 2); c.fill();
+      c.fillStyle = '#fff6d2';
+      c.beginPath(); c.arc(w / 2 - LANT_R * 0.3, h / 2 - LANT_R * 0.34, LANT_R * 0.3, 0, Math.PI * 2); c.fill();
+      c.strokeStyle = '#b8721c'; c.lineWidth = 2.4;
+      c.beginPath(); c.arc(w / 2, h / 2, LANT_R - 1, 0, Math.PI * 2); c.stroke();
+      c.beginPath(); c.moveTo(w / 2 - LANT_R, h / 2); c.lineTo(w / 2 + LANT_R, h / 2); c.stroke();
+    });
+  }
+
+  function drawLanterns() {
+    var s = lanternSprite();
+    for (var i = 0; i < S.lants.length; i++) {
+      var o = S.lants[i];
+      blit(s, o.x, o.y + Math.sin(o.bob) * 2.5);
+    }
+  }
+
+  function boatSprite() {
+    return sprite('boat', 62, 40, function (c, w, h) {
+      var mx = w / 2, my = h / 2;
+      c.fillStyle = '#e2503a';
+      c.beginPath();
+      c.moveTo(mx + 28, my);
+      c.quadraticCurveTo(mx + 6, my - 15, mx - 20, my - 12);
+      c.quadraticCurveTo(mx - 27, my, mx - 20, my + 12);
+      c.quadraticCurveTo(mx + 6, my + 15, mx + 28, my);
+      c.closePath();
+      c.fill();
+      c.fillStyle = '#fff3e2';
+      c.beginPath();
+      c.moveTo(mx + 22, my);
+      c.quadraticCurveTo(mx + 4, my - 10, mx - 15, my - 8);
+      c.quadraticCurveTo(mx - 20, my, mx - 15, my + 8);
+      c.quadraticCurveTo(mx + 4, my + 10, mx + 22, my);
+      c.closePath();
+      c.fill();
+      c.fillStyle = '#0e7f84';
+      roundRect(c, mx - 10, my - 7, 15, 14, 4); c.fill();
+      c.fillStyle = '#ffd76a';
+      c.beginPath(); c.arc(mx + 14, my, 3.2, 0, Math.PI * 2); c.fill();
+    });
+  }
+
+  function drawBoat() {
+    var b = S.boat;
+
+    // Wake: a couple of soft arcs behind, so speed reads on still water.
+    ctx.strokeStyle = 'rgba(255,255,255,.34)';
+    ctx.lineWidth = 3;
+    for (var i = 1; i <= 2; i++) {
+      var back = 16 + i * 13;
+      ctx.beginPath();
+      ctx.arc(b.x - Math.cos(b.ang) * back, b.y - Math.sin(b.ang) * back, 9 + i * 4,
+        b.ang - 1.1, b.ang + 1.1);
+      ctx.stroke();
+    }
+
+    ctx.save();
+    ctx.translate(b.x, b.y);
+    ctx.rotate(b.ang);
+    if (S.invuln > 0 && Math.floor(S.invuln * 12) % 2 === 0) ctx.globalAlpha = 0.45;
+    blit(boatSprite(), 0, 0);
+    ctx.globalAlpha = 1;
+    ctx.restore();
+
+    // Adrift: no line left, and the sea is making the decisions.
+    if (!S.route.length && S.mode === 'play') {
+      var pulse = 0.5 + 0.5 * Math.sin(S.time * 6);
+      ctx.strokeStyle = 'rgba(255,157,122,' + (0.35 + pulse * 0.45).toFixed(2) + ')';
+      ctx.lineWidth = 3.5;
+      ctx.beginPath(); ctx.arc(b.x, b.y, 26 + pulse * 5, 0, Math.PI * 2); ctx.stroke();
+      label('ADRIFT', b.x, b.y + 46, 15, '#ffd0bd', 'center', 'rgba(12,60,66,.7)');
+    }
+  }
+
+  function drawParticles() {
+    for (var i = 0; i < S.particles.length; i++) {
+      var p = S.particles[i];
+      ctx.globalAlpha = clamp(p.life / p.max, 0, 1);
+      ctx.fillStyle = p.col;
+      ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2); ctx.fill();
+    }
+    ctx.globalAlpha = 1;
+  }
+
+  function plankSprite(filled) {
+    return sprite('plank|' + (filled ? 1 : 0), 22, 16, function (c, w, h) {
+      roundRect(c, 1, 2, w - 2, h - 4, 4);
+      if (filled) { c.fillStyle = '#e8a05a'; c.fill(); c.strokeStyle = '#a85f22'; }
+      else { c.strokeStyle = 'rgba(13,58,64,.4)'; }
+      c.lineWidth = 2.2; c.stroke();
+      if (filled) {
+        c.strokeStyle = 'rgba(255,255,255,.5)'; c.lineWidth = 1.6;
+        c.beginPath(); c.moveTo(4, h / 2); c.lineTo(w - 4, h / 2); c.stroke();
+      }
+    });
+  }
+
+  function drawHud() {
+    for (var i = 0; i < S.maxHull; i++) blit(plankSprite(i < S.hull), 34 + i * 25, 36);
+    label('HULL', 24, 58, 10, 'rgba(13,58,64,.62)', 'left');
+
+    label(fmt(S.score), view.w / 2, 52, 42, '#0d3a40', 'center', 'rgba(255,255,255,.85)');
+    var m = multiplier();
+    label(S.lanterns + ' LANTERNS' + (S.chain > 1 ? '   ×' + m.toFixed(1) : ''),
+      view.w / 2, 96, 14, S.chain > 1 ? '#c2701c' : '#0e7f84', 'center', 'rgba(255,255,255,.8)');
+
+    // Lanterns toward the next mend. It lives under the hull rather than top
+    // right, where the sound and pause buttons are.
+    for (var k = 0; k < CHAIN_FIX; k++) {
+      ctx.beginPath();
+      ctx.arc(30 + k * 13, 82, 4.2, 0, Math.PI * 2);
+      if (k < S.toFix) { ctx.fillStyle = '#7fe6c4'; ctx.fill(); }
+      ctx.strokeStyle = 'rgba(13,58,64,.4)'; ctx.lineWidth = 1.8; ctx.stroke();
+    }
+    label('MEND', 24, 102, 10, 'rgba(13,58,64,.62)', 'left');
+
+    // How much line is left to draw with.
+    var bw = ARENA_W, bx = arenaX0(), by = ARENA_BOT + 22;
+    ctx.fillStyle = 'rgba(13,58,64,.16)';
+    roundRect(ctx, bx, by, bw, 13, 7); ctx.fill();
+    var frac = clamp(1 - S.routeLen / ROUTE_MAX, 0, 1);
+    ctx.fillStyle = frac > 0.25 ? '#ffd76a' : '#ff9d7a';
+    roundRect(ctx, bx, by, Math.max(6, bw * frac), 13, 7); ctx.fill();
+    label('LINE', bx, by + 30, 10, 'rgba(13,58,64,.62)', 'left');
+  }
+
+  function drawFloats() {
+    for (var i = 0; i < S.floats.length; i++) {
+      var f = S.floats[i];
+      ctx.globalAlpha = clamp(f.life / f.max, 0, 1);
+      label(f.text, f.x, f.y, f.size, f.col, 'center', 'rgba(12,60,66,.75)');
+    }
+    ctx.globalAlpha = 1;
+  }
+
+  function drawToast() {
+    if (S.toastT <= 0) return;
+    ctx.globalAlpha = clamp(S.toastT, 0, 1);
+    label(S.toastMsg, view.w / 2, 142, 17, '#0d3a40', 'center', 'rgba(255,255,255,.9)');
+    if (S.toastSub) label(S.toastSub, view.w / 2, 170, 13, '#0e7f84', 'center', 'rgba(255,255,255,.85)');
+    ctx.globalAlpha = 1;
+  }
+  /* =========================================================================
+     12. UI WIRING
+     ========================================================================= */
+  var ovMenu = document.getElementById('ovMenu');
+  var ovOver = document.getElementById('ovOver');
+  var ovPause = document.getElementById('ovPause');
+  var elFinal = document.getElementById('finalScore');
+  var elBest = document.getElementById('bestScore');
+  var elBestLabel = document.getElementById('bestLabel');
+  var elRecord = document.getElementById('newRecord');
+  var elRunStats = document.getElementById('runStats');
+  var elMenuHint = document.getElementById('menuHint');
+  var elOverTitle = document.getElementById('overTitle');
+  var elTierPick = document.getElementById('tierPick');
+  var elSuggest = document.getElementById('suggestBox');
+  var elSuggestMsg = document.getElementById('suggestMsg');
+  var btnSuggest = document.getElementById('btnSuggest');
+  var btnSound = document.getElementById('btnSound');
+  var btnPause = document.getElementById('btnPause');
+
+  var ICON_ON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9v6h4l5 4V5L8 9H4z"/><path d="M16.5 8.5a5 5 0 0 1 0 7"/><path d="M19 6a9 9 0 0 1 0 12"/></svg>';
+  var ICON_OFF = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9v6h4l5 4V5L8 9H4z"/><path d="M17 9l5 6"/><path d="M22 9l-5 6"/></svg>';
+  var ICON_PAUSE = '<svg viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="5" width="4" height="14" rx="1.4"/><rect x="14" y="5" width="4" height="14" rx="1.4"/></svg>';
+  btnPause.innerHTML = ICON_PAUSE;
+
+  function syncSoundIcon() {
+    btnSound.innerHTML = (Sound.muted || !Platform.audioAllowed) ? ICON_OFF : ICON_ON;
+  }
+  function toggleMute() {
+    Sound.muted = !Sound.muted;
+    Store.data.muted = Sound.muted;
+    Store.save();
+    Sound.applyVolume();
+    syncSoundIcon();
+  }
+  btnSound.addEventListener('click', function (e) {
+    e.stopPropagation(); Sound.boot(); Sound.resumeCtx(); toggleMute();
+  });
+  btnPause.addEventListener('click', function (e) {
+    e.stopPropagation();
+    endDraw();
+    if (S.mode === 'play') pauseGame();
+    else if (S.mode === 'paused') resumeGame();
+  });
+
+  var gameOverShown = false;
+
+  function showOverlay(which) {
+    ovMenu.hidden = which !== 'menu';
+    ovOver.hidden = which !== 'over';
+    ovPause.hidden = which !== 'pause';
+  }
+
+  function buildTierPicker() {
+    elTierPick.innerHTML = '';
+    TIERS.forEach(function (T) {
+      var b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'tier';
+      b.setAttribute('role', 'radio');
+      b.id = 'tier-' + T.id;
+      b.dataset.tier = T.id;
+      b.innerHTML = '<span class="tn"></span><span class="tb"></span>';
+      b.querySelector('.tn').textContent = T.name;
+      b.querySelector('.tb').textContent = T.blurb;
+      b.addEventListener('click', function () { setTier(T.id); Sound.boot(); Sound.ui(); });
+      elTierPick.appendChild(b);
+    });
+    syncTierPicker();
+  }
+
+  function syncTierPicker() {
+    var kids = elTierPick.children;
+    for (var i = 0; i < kids.length; i++) {
+      kids[i].setAttribute('aria-checked', kids[i].dataset.tier === Store.data.tier ? 'true' : 'false');
+    }
+    syncMenuHint();
+  }
+
+  function setTier(id) {
+    if (Store.data.tier === id) return;
+    Store.data.tier = id;
+    Store.data.quickDeaths = 0;
+    Store.save();
+    resetRun();
+    syncTierPicker();
+  }
+
+  function syncMenuHint() {
+    var T = tierById(Store.data.tier);
+    var best = Store.best();
+    if (best > 0) {
+      elMenuHint.innerHTML =
+        '<b>' + T.name + '</b> · ' + T.hull + ' planks · set ' + Math.round(T.drift * 100) + '%<br>' +
+        'best <b>' + fmt(best) + '</b> · ' + Store.lanterns() + ' lanterns · chain <b>' +
+        Store.chain() + '</b>';
+    } else {
+      elMenuHint.innerHTML =
+        '<b>' + T.name + '</b> · ' + T.hull + ' planks<br>' +
+        '<b>Drag</b> to draw the boat a route. The line is drawn in the water,<br>' +
+        'so it floats with the lanterns — but the floes sit deep and lag,<br>' +
+        'sliding across your plan the whole time it runs.';
+    }
+  }
+
+  function startRun() {
+    Sound.boot(); Sound.resumeCtx();
+    gameOverShown = false;
+    resetRun();
+    S.mode = 'play';
+    showOverlay(null);
+    Sound.ui();
+    Sound.sea(true);
+    toast('DRAG TO DRAW A ROUTE', 'your line floats with the lanterns · the ice does not');
+  }
+
+  function showGameOver() {
+    gameOverShown = true;
+    var T = S.tier;
+    var final = Math.floor(S.score);
+    var isRecord = final > Store.best(T.id);
+    if (isRecord) Store.data.bests[T.id] = final;
+    if (S.lanterns > Store.lanterns(T.id)) Store.data.bestLanterns[T.id] = S.lanterns;
+    if (S.bestChain > Store.chain(T.id)) Store.data.bestChain[T.id] = S.bestChain;
+    Store.data.runs++;
+
+    if (S.lanterns < 6) Store.data.quickDeaths++;
+    else Store.data.quickDeaths = 0;
+
+    elOverTitle.textContent = overTitleText;
+    elFinal.textContent = fmt(final);
+    elBest.textContent = fmt(Store.best(T.id));
+    elBestLabel.textContent = 'Best · ' + T.name;
+    elRecord.hidden = !isRecord;
+    elRunStats.textContent =
+      S.lanterns + ' lanterns · best chain ' + S.bestChain + ' · ' + S.hits + ' holed · ' +
+      Math.floor(S.time) + 's afloat' +
+      (S.repairs ? ' · ' + S.repairs + ' planks mended' : '');
+
+    applySuggestion(T);
+    Store.save();
+    showOverlay('over');
+  }
+
+  var suggestTarget = null;
+
+  function applySuggestion(T) {
+    var idx = tierIndex(T.id);
+    suggestTarget = null;
+    if (Store.data.quickDeaths >= 3 && idx > 0 && !Store.data.offeredDown) {
+      suggestTarget = TIERS[idx - 1];
+      elSuggestMsg.textContent =
+        'Three short voyages. ' + suggestTarget.name + ' runs at ' +
+        Math.round(suggestTarget.drift * 100) + '% instead of ' + Math.round(T.drift * 100) +
+        '%, so your line keeps its shape.';
+      btnSuggest.textContent = 'Switch to ' + suggestTarget.name;
+      Store.data.offeredDown = true;
+    } else if (S.bestChain >= 12 && idx < TIERS.length - 1 && !Store.data.offeredUp) {
+      suggestTarget = TIERS[idx + 1];
+      elSuggestMsg.textContent =
+        'A chain of ' + S.bestChain + '. ' + suggestTarget.name + ' runs faster water and pays ' +
+        suggestTarget.scoreMul + '×.';
+      btnSuggest.textContent = 'Try ' + suggestTarget.name;
+      Store.data.offeredUp = true;
+    }
+    elSuggest.hidden = !suggestTarget;
+  }
+
+  btnSuggest.addEventListener('click', function () {
+    if (!suggestTarget) return;
+    setTier(suggestTarget.id);
+    startRun();
+  });
+
+  function pauseGame() {
+    if (S.mode !== 'play') return;
+    S.drawing = false;
+    S.mode = 'paused';
+    Sound.sea(false);
+    Sound.hardStop();
+    showOverlay('pause');
+  }
+
+  function resumeGame() {
+    if (S.mode !== 'paused') return;
+    Sound.resumeCtx();
+    Sound.applyVolume();
+    Sound.sea(true);
+    S.mode = 'play';
+    S.drawing = false;
+    last = performance.now();
+    showOverlay(null);
+  }
+
+  function toMenu() {
+    S.mode = 'menu';
+    resetRun();
+    syncTierPicker();
+    Sound.sea(false);
+    showOverlay('menu');
+  }
+
+  document.getElementById('btnPlay').addEventListener('click', startRun);
+  document.getElementById('btnAgain').addEventListener('click', startRun);
+  document.getElementById('btnMenu').addEventListener('click', toMenu);
+  document.getElementById('btnResume').addEventListener('click', resumeGame);
+  document.getElementById('btnQuit').addEventListener('click', function () {
+    if (gameOverShown) return;
+    S.mode = 'dead'; S.deathT = 0;
+    overTitleText = 'Put In';
+    Sound.sea(false);
+    showGameOver();
+  });
+
+  /* =========================================================================
+     13. PLATFORM PAUSE / VISIBILITY
+     ========================================================================= */
+  var hardPaused = false;
+
+  function platformPause() {
+    hardPaused = true;
+    S.drawing = false;
+    Sound.hardStop();
+    if (S.mode === 'play') pauseGame();
+    if (raf) { cancelAnimationFrame(raf); raf = 0; }
+  }
+  function platformResume() {
+    hardPaused = false;
+    Sound.resumeCtx();
+    Sound.applyVolume();
+    last = performance.now();
+    if (!raf) raf = requestAnimationFrame(frame);
+  }
+
+  Platform.init(platformPause, platformResume, function () {
+    Sound.applyVolume();
+    syncSoundIcon();
+  });
+
+  document.addEventListener('visibilitychange', function () {
+    if (document.hidden) platformPause(); else platformResume();
+  });
+  window.addEventListener('blur', function () {
+    if (S.mode === 'play') pauseGame();
+  });
+
+  /* =========================================================================
+     14. MAIN LOOP
+     ========================================================================= */
+  var last = 0, raf = 0, painted = false;
+
+  function frame(now) {
+    raf = requestAnimationFrame(frame);
+    if (hardPaused) return;
+    var dt = (now - last) / 1000;
+    last = now;
+    if (!isFinite(dt) || dt < 0) dt = 0;
+    dt = Math.min(dt, 0.05);
+    if (S.mode === 'paused') return;   // no rendering at all while paused
+    update(dt);
+    render();
+    if (!painted) { painted = true; Platform.firstFrame(); Platform.ready(); }
+  }
+
+  /* =========================================================================
+     15. BOOT
+     ========================================================================= */
+  function boot() {
+    layout();
+    Sound.muted = !!Store.data.muted;
+    syncSoundIcon();
+    buildTierPicker();
+    resetRun();
+    elBest.textContent = fmt(Store.best());
+    showOverlay('menu');
+    last = performance.now();
+    raf = requestAnimationFrame(frame);
+  }
+
+  window.addEventListener('resize', layout);
+  if (window.visualViewport) window.visualViewport.addEventListener('resize', layout);
+  window.addEventListener('orientationchange', function () { setTimeout(layout, 120); });
+
+  Store.load(boot);
+})();
+</script>
+</body>
+</html>
